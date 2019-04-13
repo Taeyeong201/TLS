@@ -84,7 +84,8 @@ class server
 public:
 	server(boost::asio::io_context& io_context, unsigned short port)
 		: acceptor_(io_context, tcp::endpoint(tcp::v4(), port)),
-		context_(boost::asio::ssl::context::sslv23)
+		//context_(boost::asio::ssl::context::sslv23)
+		context_(boost::asio::ssl::context::tlsv13_server)
 	{
 		context_.set_options(
 			boost::asio::ssl::context::default_workarounds

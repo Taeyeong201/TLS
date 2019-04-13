@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
 		boost::asio::ip::tcp::resolver::query query(argv[1], argv[2]);
 		boost::asio::ip::tcp::resolver::iterator iterator = resolver.resolve(query);
 
-		boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+		boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv13_client);
 		ctx.load_verify_file("D:\\VDI\\lib\\OpenSSL\\bin\\rootca.crt");
 
 		client c(io_service, ctx, iterator);
