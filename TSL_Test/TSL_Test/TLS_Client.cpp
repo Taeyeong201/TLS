@@ -1,4 +1,5 @@
 ﻿#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
@@ -46,6 +47,7 @@ public:
 	{
 		if (!error)
 		{
+			//TLS handshaking
 			socket_.async_handshake(boost::asio::ssl::stream_base::client,
 				boost::bind(&client::handle_handshake, this,
 					boost::asio::placeholders::error));
@@ -131,7 +133,7 @@ int main(int argc, char* argv[])
 		boost::asio::ip::tcp::resolver::iterator iterator = resolver.resolve(query);
 
 		boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-		ctx.load_verify_file("ca.pem");
+		ctx.load_verify_file("D:\\VDI\\lib\\OpenSSL\\bin\\rootca.crt");
 
 		client c(io_service, ctx, iterator);
 

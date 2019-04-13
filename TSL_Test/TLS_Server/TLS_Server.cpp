@@ -51,6 +51,11 @@ private:
 		{
 			if (!ec)
 			{
+				std::cout << "Receied: ";
+				std::cout.write(data_, length);
+				std::cout << "\n";
+				std::cout << "Sending back again\n";
+
 				do_write(length);
 			}
 		});
@@ -87,9 +92,9 @@ public:
 			//| boost::asio::ssl::context::
 			| boost::asio::ssl::context::single_dh_use);
 		context_.set_password_callback(std::bind(&server::get_password, this));
-		context_.use_certificate_chain_file("server.pem");
-		context_.use_private_key_file("server.pem", boost::asio::ssl::context::pem);
-		context_.use_tmp_dh_file("dh2048.pem");
+		context_.use_certificate_chain_file("D:\\VDI\\lib\\OpenSSL\\bin\\user.crt");
+		context_.use_private_key_file("D:\\VDI\\lib\\OpenSSL\\bin\\user.key", boost::asio::ssl::context::pem);
+		context_.use_tmp_dh_file("D:\\VDI\\lib\\OpenSSL\\bin\\dh2048.pem");
 
 		do_accept();
 	}
