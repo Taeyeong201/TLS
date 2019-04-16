@@ -24,6 +24,7 @@ public:
 
 	void connect() {
 		tls_stream.lowest_layer().connect(endpoint);
+		tls_stream.lowest_layer().set_option(asio::ip::tcp::no_delay(true));
 
 		tls_stream.handshake(asio::ssl::stream_base::client);
 	}
