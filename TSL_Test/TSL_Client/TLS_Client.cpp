@@ -10,7 +10,7 @@ enum { max_length = 1024 };
 class client
 {
 public:
-	client(boost::asio::io_service& io_service,
+	client(boost::asio::io_context& io_service,
 		boost::asio::ssl::context& context,
 		boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 		: socket_(io_service, context)
@@ -116,6 +116,8 @@ private:
 	char reply_[max_length];
 };
 
+
+
 int main(int argc, char* argv[])
 {
 	try
@@ -126,7 +128,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		boost::asio::io_service io_service;
+		boost::asio::io_context io_service;
 
 		boost::asio::ip::tcp::resolver resolver(io_service);
 		boost::asio::ip::tcp::resolver::query query(argv[1], argv[2]);

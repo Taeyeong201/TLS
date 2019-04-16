@@ -22,6 +22,7 @@ public:
 	session(tcp::socket socket, boost::asio::ssl::context& context)
 		: socket_(std::move(socket), context)
 	{
+		
 	}
 
 	void start()
@@ -90,6 +91,8 @@ public:
 		context_.set_options(
 			boost::asio::ssl::context::default_workarounds
 			| boost::asio::ssl::context::no_sslv2
+			| boost::asio::ssl::context::no_sslv3
+			| boost::asio::ssl::context::no_tlsv1_1
 			//| boost::asio::ssl::context::
 			| boost::asio::ssl::context::single_dh_use);
 		context_.set_password_callback(std::bind(&server::get_password, this));
