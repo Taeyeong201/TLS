@@ -1,9 +1,13 @@
+#include <WinSock2.h>
+#include <Windows.h>
+
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+
 
 enum { max_length = 1024 };
 using namespace boost;
