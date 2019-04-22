@@ -13,6 +13,7 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+#include <boost/thread/thread.hpp>
 
 using boost::asio::ip::tcp;
 
@@ -96,9 +97,9 @@ public:
 			//| boost::asio::ssl::context::
 			| boost::asio::ssl::context::single_dh_use);
 		context_.set_password_callback(std::bind(&server::get_password, this));
-		context_.use_certificate_chain_file("D:\\VDI\\lib\\OpenSSL\\bin\\user.crt");
-		context_.use_private_key_file("D:\\VDI\\lib\\OpenSSL\\bin\\user.key", boost::asio::ssl::context::pem);
-		context_.use_tmp_dh_file("D:\\VDI\\lib\\OpenSSL\\bin\\dh2048.pem");
+		context_.use_certificate_chain_file("root.pem");
+		context_.use_private_key_file("root.key", boost::asio::ssl::context::pem);
+		context_.use_tmp_dh_file("dh2048.pem");
 
 		do_accept();
 	}
@@ -127,22 +128,44 @@ private:
 	boost::asio::ssl::context context_;
 };
 
+boost::asio::io_context io_context;
+void test() {
+	
+
+	using namespace std; // For atoi.
+	server s(io_context, 9000);
+	io_context.run();
+}
+
 int main(int argc, char* argv[])
 {
 	try
 	{
-		if (argc != 2)
+		/*if (argc != 2)
 		{
 			std::cerr << "Usage: server <port>\n";
 			return 1;
+		}*/
+
+		
+
+		auto th = boost::thread::thread(test);
+		std::string input_string;
+		while (true) 
+		{
+			std::cin >> input_string;
+			if (input_string.compare("exit") == 0) {
+				break;
+			}
+			input_string.clear();
+		}
+		io_context.stop();
+		if (th.joinable()) {
+			th.join();
 		}
 
-		boost::asio::io_context io_context;
-
-		using namespace std; // For atoi.
-		server s(io_context, atoi(argv[1]));
-
-		io_context.run();
+		//auto worker = new boost::asio::io_context::work(io_context);
+		//delete worker;
 	}
 	catch (std::exception& e)
 	{
