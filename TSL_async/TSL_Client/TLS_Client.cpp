@@ -116,8 +116,6 @@ private:
 	char reply_[max_length];
 };
 
-
-
 int main(int argc, char* argv[])
 {
 	try
