@@ -1,7 +1,7 @@
 #define BUF_SIZE 4096
 
 
-#if 1
+#if 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
 
 	s_accept = accept(s_listen, (SOCKADDR *)&client_addr, &len_addr);
 	if (s_accept) {
-		start = GetMicroCounter();
+		
 		printf("Connection Request from Client [IP:%s, Port:%d] has been Accepted\n",
 			inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 		readBytes = recv(s_accept, buf, BUF_SIZE, 0);
@@ -79,21 +79,23 @@ int main(int argc, char **argv) {
 		totalBufferNum = file_size / BUF_SIZE + 1;
 		BufferNum = 0;
 		totalReadBytes = 0;
-
+		start = GetMicroCounter();
 		while (BufferNum != totalBufferNum) {
 			readBytes = recv(s_accept, buf, BUF_SIZE, 0);
 			BufferNum++;
 			totalReadBytes += readBytes;
-			printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
+			//printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
 			fwrite(buf, sizeof(char), readBytes, fp);
 
 			if (readBytes == SOCKET_ERROR) {
 				printf("File Receive Errpr");
 				exit(1);
 			}
+
 		}
-		closesocket(s_accept);
 		end = GetMicroCounter();
+		closesocket(s_accept);
+		
 		//printf("time: %d second(s)", end - start);
 		std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
 	}
@@ -160,7 +162,7 @@ int main(int argc, char **argv) {
 
 	acceptor.accept(socket);
 	start = GetMicroCounter();
-	printf("Connection Request from Client");
+	printf("Connection Request from Client\n");
 	
 	readBytes = boost::asio::read(socket, boost::asio::buffer(buf, BUF_SIZE));
 	file_size = atol(buf);
@@ -168,16 +170,17 @@ int main(int argc, char **argv) {
 	BufferNum = 0;
 	totalReadBytes = 0;
 	boost::system::error_code err;
+	start = GetMicroCounter();
 	while (BufferNum != totalBufferNum) {
 		readBytes = boost::asio::read(socket, boost::asio::buffer(buf, BUF_SIZE),err);
-		if (err) {
-			printf("File Receive Errpr \n");
-			std::cerr << "message : " << err.message() << std::endl;
-			exit(1);
-		}
+		//if (err) {
+		//	printf("File Receive Errpr \n");
+		//	std::cerr << "message : " << err.message() << std::endl;
+		//	exit(1);
+		//}
 		BufferNum++;
 		totalReadBytes += readBytes;
-		printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
+		//printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
 		fwrite(buf, sizeof(char), readBytes, fp);
 	}
 	

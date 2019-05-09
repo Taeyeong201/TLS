@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 		send(s, buf, sendBytes, 0);
 		BufferNum++;
 		totalSendBytes += sendBytes;
-		printf("In progress: %d/%dByte(s) [%d%%]\n", totalSendBytes, file_size, ((BufferNum * 100) / totalBufferNum));
+		//printf("In progress: %d/%dByte(s) [%d%%]\n", totalSendBytes, file_size, ((BufferNum * 100) / totalBufferNum));
 	}
 	end = GetMicroCounter();
 	//printf("time: %d second(s)", end - start);
