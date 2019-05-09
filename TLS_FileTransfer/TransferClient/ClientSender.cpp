@@ -1,12 +1,14 @@
+#define BUF_SIZE 4096
+#if 1
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 #include <WinSock2.h>
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
 #pragma comment(lib, "Ws2_32.lib")
 typedef unsigned long long u64;
 u64 GetMicroCounter();
-#define BUF_SIZE 1024
 
 //파라메터 :  <server IP> <port> <filename>
 int main(int argc, char **argv) {
@@ -70,7 +72,8 @@ int main(int argc, char **argv) {
 		printf("In progress: %d/%dByte(s) [%d%%]\n", totalSendBytes, file_size, ((BufferNum * 100) / totalBufferNum));
 	}
 	end = GetMicroCounter();
-	printf("time: %d second(s)", end - start);
+	//printf("time: %d second(s)", end - start);
+	std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
 
 	closesocket(s);
 	WSACleanup();
@@ -95,3 +98,85 @@ u64 GetMicroCounter()
 
 	return Counter;
 }
+
+#else
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <boost/asio.hpp>
+
+typedef unsigned long long u64;
+u64 GetMicroCounter();
+
+using namespace boost::asio::ip;
+
+int main(int argc, char **argv) {
+	u64 start, end;
+	boost::asio::io_context ioc;
+
+	if (argc != 4) {
+		printf("Command parameter does not right. \n<server IP> <port> <filename>\n");
+		exit(1);
+	}
+
+	tcp::endpoint endpoint(address::from_string(argv[1]), atoi(argv[2]));
+
+	tcp::socket socket(ioc);
+
+	socket.connect(endpoint);
+
+	printf("File Send Start");
+
+	int totalBufferNum;
+	int BufferNum;
+	int sendBytes;
+	long totalSendBytes;
+	long file_size;
+	char buf[BUF_SIZE];
+
+	FILE *fp;
+	fp = fopen(argv[3], "rb");
+	if (fp == NULL) {
+		printf("File not Exist");
+		exit(1);
+	}
+	fseek(fp, 0, SEEK_END);
+	file_size = ftell(fp);
+	totalBufferNum = file_size / sizeof(buf) + 1;
+	fseek(fp, 0, SEEK_SET);
+	BufferNum = 0;
+	totalSendBytes = 0;
+
+	_snprintf(buf, sizeof(buf), "%d", file_size);
+	//sendBytes = send(s, buf, sizeof(buf), 0);
+	sendBytes = socket.send(boost::asio::buffer(buf, BUF_SIZE));
+
+	start = GetMicroCounter();
+	while ((sendBytes = fread(buf, sizeof(char), sizeof(buf), fp)) > 0) {
+		socket.send(boost::asio::buffer(buf, BUF_SIZE));
+		BufferNum++;
+		totalSendBytes += sendBytes;
+		printf("In progress: %d/%dByte(s) [%d%%]\n", totalSendBytes, 
+			file_size, ((BufferNum * 100) / totalBufferNum));
+	}
+	end = GetMicroCounter();
+	//printf("time: %f second(s)", (end - start)/10000);
+	std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
+
+	return 0;
+}
+
+
+u64 GetMicroCounter()
+{
+	u64 Counter;
+
+	u64 Frequency;
+	QueryPerformanceFrequency((LARGE_INTEGER *)&Frequency);
+	QueryPerformanceCounter((LARGE_INTEGER *)&Counter);
+	Counter = 1000000 * Counter / Frequency;
+
+	return Counter;
+}
+#endif

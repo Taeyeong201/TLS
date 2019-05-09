@@ -1,8 +1,10 @@
+#define BUF_SIZE 4096
 
 
-#if 0
+#if 1
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 #include <WinSock2.h>
 #include <windows.h>
 #if defined(_WIN32)
@@ -14,7 +16,6 @@
 
 typedef unsigned long long u64;
 u64 GetMicroCounter();
-#define BUF_SIZE 1024
 
 // 파라메터 :  <port> <filename>
 int main(int argc, char **argv) {
@@ -93,7 +94,8 @@ int main(int argc, char **argv) {
 		}
 		closesocket(s_accept);
 		end = GetMicroCounter();
-		printf("time: %d second(s)", end - start);
+		//printf("time: %d second(s)", end - start);
+		std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
 	}
 	else {
 		printf("File Accept Error");
@@ -123,15 +125,67 @@ u64 GetMicroCounter()
 	return Counter;
 }
 #else
+#include <stdio.h>
+#include <iostream>
+#include <stdlib.h>
 #include <boost/asio.hpp>
 typedef unsigned long long u64;
 u64 GetMicroCounter();
-#define BUF_SIZE 1024
+
+using namespace boost::asio::ip;
+
 int main(int argc, char **argv) {
+	boost::asio::io_context ioc;
+	u64 start, end;
+
 	if (argc != 3) {
 		printf("Command parameter does not right. \n<port> <filename>\n");
 		exit(1);
 	}
+
+	tcp::endpoint endpoint(tcp::v4(), atoi(argv[1]));
+	tcp::acceptor acceptor(ioc, endpoint);
+	tcp::socket socket(ioc);
+
+	int totalBufferNum;
+	int BufferNum;
+	int readBytes = 0;
+	long file_size;
+	long totalReadBytes;
+
+	char buf[BUF_SIZE];
+
+	FILE * fp;
+	fp = fopen(argv[2], "wb");
+
+	acceptor.accept(socket);
+	start = GetMicroCounter();
+	printf("Connection Request from Client");
+	
+	readBytes = boost::asio::read(socket, boost::asio::buffer(buf, BUF_SIZE));
+	file_size = atol(buf);
+	totalBufferNum = file_size / BUF_SIZE + 1;
+	BufferNum = 0;
+	totalReadBytes = 0;
+	boost::system::error_code err;
+	while (BufferNum != totalBufferNum) {
+		readBytes = boost::asio::read(socket, boost::asio::buffer(buf, BUF_SIZE),err);
+		if (err) {
+			printf("File Receive Errpr \n");
+			std::cerr << "message : " << err.message() << std::endl;
+			exit(1);
+		}
+		BufferNum++;
+		totalReadBytes += readBytes;
+		printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
+		fwrite(buf, sizeof(char), readBytes, fp);
+	}
+	
+	end = GetMicroCounter();
+	//printf("time: %f second(s)", (end - start)/10000);
+	std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
+
+	socket.close();
 	return 0;
 }
 
