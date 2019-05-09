@@ -1,4 +1,4 @@
-#define BUF_SIZE 4096
+#define BUF_SIZE 10240
 
 
 #if 0

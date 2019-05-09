@@ -1,5 +1,5 @@
 #define BUF_SIZE 4096
-#if 1
+#if 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	printf("File Send Start");
+	printf("File Send Start\n");
 
 	int totalBufferNum;
 	int BufferNum;
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
 
 	socket.connect(endpoint);
 
-	printf("File Send Start");
+	printf("File Send Start\n");
 
 	int totalBufferNum;
 	int BufferNum;
@@ -157,8 +157,8 @@ int main(int argc, char **argv) {
 		socket.send(boost::asio::buffer(buf, BUF_SIZE));
 		BufferNum++;
 		totalSendBytes += sendBytes;
-		printf("In progress: %d/%dByte(s) [%d%%]\n", totalSendBytes, 
-			file_size, ((BufferNum * 100) / totalBufferNum));
+		//printf("In progress: %d/%dByte(s) [%d%%]\n", totalSendBytes, 
+			//file_size, ((BufferNum * 100) / totalBufferNum));
 	}
 	end = GetMicroCounter();
 	//printf("time: %f second(s)", (end - start)/10000);
