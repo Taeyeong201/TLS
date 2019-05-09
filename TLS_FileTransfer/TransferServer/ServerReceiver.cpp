@@ -1,4 +1,4 @@
-#define BUF_SIZE 4096
+#define BUF_SIZE 10240
 
 
 #if 1
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 			readBytes = recv(s_accept, buf, BUF_SIZE, 0);
 			BufferNum++;
 			totalReadBytes += readBytes;
-			printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
+			//printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
 			fwrite(buf, sizeof(char), readBytes, fp);
 
 			if (readBytes == SOCKET_ERROR) {
