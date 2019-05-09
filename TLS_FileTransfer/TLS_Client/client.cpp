@@ -25,16 +25,16 @@ public:
 		tls_stream.set_verify_callback(
 			boost::bind(&TLS_SockClientStream::verify_certificate, this, _1, _2));
 	};
-	void connect(boost::asio::ip::tcp::endpoint* servAddr_AUDIO_) {
+	void connect(boost::asio::ip::tcp::endpoint& servAddr_AUDIO_) {
 		boost::system::error_code err;
-		tls_stream.lowest_layer().connect(*servAddr_AUDIO);
+		tls_stream.lowest_layer().connect(servAddr_AUDIO_);
 
 		tls_stream.handshake(boost::asio::ssl::stream_base::client, err);
 		if (err) {
 			std::cerr << "HandShake ERR" << std::endl;
 		}
-		tls_stream.lowest_layer().set_option(
-			boost::asio::ip::tcp::no_delay(true));
+		/*tls_stream.lowest_layer().set_option(
+			boost::asio::ip::tcp::no_delay(true));*/
 
 	}
 
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 
 	//socket.connect(endpoint);
 	TLS_SockClientStream tlsSocket(ioc);
-	tlsSocket.connect(&endpoint);
+	tlsSocket.connect(endpoint);
 
 	printf("File Send Start");
 
