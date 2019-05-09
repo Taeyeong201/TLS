@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 
 	tlsSock.create_TLS_Stream(socket);
 	tlsSock.socket_->handshake(boost::asio::ssl::stream_base::server);
-	tlsSock.socket_->lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
+	//tlsSock.socket_->lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
 	start = GetMicroCounter();
 	printf("Connection Request from Client\n");
 
