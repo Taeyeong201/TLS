@@ -7,7 +7,7 @@
 #include <boost/bind.hpp>
 typedef unsigned long long u64;
 u64 GetMicroCounter();
-
+u64 start, end;
 using namespace boost::asio::ip;
 class TLS_SockServerStream {
 public:
@@ -21,14 +21,53 @@ public:
 			std::make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
 			(std::move(sock), tls_context);
 	}
-	void setSecurity() {
+	void setSecurity(char *filename) {
 		tls_setOption();
 		verify_certificate();
-	};
 
+		fp = fopen(filename, "wb");
+		if (fp == NULL) {
+			printf("File not Exist");
+			exit(1);
+		}
+	};
+	void readFileSize() {
+		std::cout << "connect" << std::endl;
+		boost::asio::async_read(*socket_,
+			boost::asio::buffer(buf, BUF_SIZE),
+			boost::bind(&TLS_SockServerStream::readFileSizeHandle, this));
+	}
 	std::shared_ptr<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> socket_;
 
 private:
+	void readFileSizeHandle() {
+		file_size = atol(buf);
+		totalBufferNum = file_size / BUF_SIZE + 1;
+		BufferNum = 0;
+		totalReadBytes = 0;
+		boost::asio::async_read(*socket_,
+			boost::asio::buffer(buf, BUF_SIZE),
+			boost::bind(&TLS_SockServerStream::readFileData, this,
+				boost::asio::placeholders::bytes_transferred));
+		start = GetMicroCounter();
+	}
+	void readFileData(size_t bytes_transferred) {
+		if (BufferNum != totalBufferNum) {
+			BufferNum++;
+			totalReadBytes += bytes_transferred;
+			fwrite(buf, sizeof(char), bytes_transferred, fp);
+			boost::asio::async_read(*socket_,
+				boost::asio::buffer(buf, BUF_SIZE),
+				boost::bind(&TLS_SockServerStream::readFileData, this,
+					boost::asio::placeholders::bytes_transferred));
+		}
+		else {
+			end = GetMicroCounter();
+			//printf("time: %f second(s)", (end - start)/10000);
+			std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
+			fclose(fp);
+		}
+	}
 	void tls_setOption() {
 		tls_context.set_options(
 			boost::asio::ssl::context::default_workarounds
@@ -44,22 +83,6 @@ private:
 		tls_context.use_tmp_dh_file("dh2048.pem");
 	};
 	boost::asio::ssl::context tls_context;
-};
-
-
-int main(int argc, char **argv) {
-	boost::asio::io_context ioc;
-	u64 start, end;
-
-	if (argc != 3) {
-		printf("Command parameter does not right. \n<port> <filename>\n");
-		exit(1);
-	}
-
-	tcp::endpoint endpoint(tcp::v4(), atoi(argv[1]));
-	tcp::acceptor acceptor(ioc, endpoint);
-	tcp::socket socket(ioc);
-	TLS_SockServerStream tlsSock;
 
 
 	int totalBufferNum;
@@ -71,42 +94,32 @@ int main(int argc, char **argv) {
 	char buf[BUF_SIZE];
 
 	FILE * fp;
-	fp = fopen(argv[2], "wb");
-	tlsSock.setSecurity();
+};
+
+
+int main(int argc, char **argv) {
+	boost::asio::io_context ioc;
+	
+
+	if (argc != 3) {
+		printf("Command parameter does not right. \n<port> <filename>\n");
+		exit(1);
+	}
+
+	tcp::endpoint endpoint(tcp::v4(), atoi(argv[1]));
+	tcp::acceptor acceptor(ioc, endpoint);
+	tcp::socket socket(ioc);
+	TLS_SockServerStream tlsSock;
+	
+	tlsSock.setSecurity(argv[2]);
 	acceptor.accept(socket);
 
 	tlsSock.create_TLS_Stream(socket);
 	tlsSock.socket_->handshake(boost::asio::ssl::stream_base::server);
-	//tlsSock.socket_->lowest_layer().set_option(boost::asio::ip::tcp::no_delay(true));
-	start = GetMicroCounter();
-	printf("Connection Request from Client\n");
 
-	readBytes = boost::asio::read(*(tlsSock.socket_), boost::asio::buffer(buf, BUF_SIZE));
-	file_size = atol(buf);
-	totalBufferNum = file_size / BUF_SIZE + 1;
-	BufferNum = 0;
-	totalReadBytes = 0;
-	boost::system::error_code err;
-	start = GetMicroCounter();
-	while (BufferNum != totalBufferNum) {
-		readBytes = boost::asio::read(*(tlsSock.socket_), boost::asio::buffer(buf, BUF_SIZE), err);
-		//readBytes = boost::asio::read(socket, boost::asio::buffer(buf, BUF_SIZE), err);
-		//if (err) {
-		//	printf("File Receive Errpr \n");
-		//	std::cerr << "message : " << err.message() << std::endl;
-		//	exit(1);
-		//}
-		BufferNum++;
-		totalReadBytes += readBytes;
-		//printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
-		fwrite(buf, sizeof(char), readBytes, fp);
-	}
+	tlsSock.readFileSize();
+	ioc.run();
 
-	end = GetMicroCounter();
-	//printf("time: %f second(s)", (end - start)/10000);
-	std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
-
-	socket.close();
 	return 0;
 }
 
