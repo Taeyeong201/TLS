@@ -42,14 +42,14 @@ public:
 			exit(1);
 		}
 
-			fseek(fp, 0, SEEK_END);
-	file_size = ftell(fp);
-	totalBufferNum = file_size / sizeof(buf) + 1;
-	fseek(fp, 0, SEEK_SET);
-	BufferNum = 0;
-	totalSendBytes = 0;
+		fseek(fp, 0, SEEK_END);
+		file_size = ftell(fp);
+		totalBufferNum = file_size / sizeof(buf) + 1;
+		fseek(fp, 0, SEEK_SET);
+		BufferNum = 0;
+		totalSendBytes = 0;
 
-	_snprintf(buf, sizeof(buf), "%d", file_size);
+		_snprintf(buf, sizeof(buf), "%d", file_size);
 	}
 
 	void sendFile() {
@@ -74,6 +74,10 @@ private:
 				boost::bind(&TLS_SockClientStream::sendFileHandle2, this));
 			BufferNum++;
 			totalSendBytes += sendBytes;
+		}
+		else {
+			end = GetMicroCounter();
+			std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
 		}
 	}
 	bool verify_certificate(bool preverified,
