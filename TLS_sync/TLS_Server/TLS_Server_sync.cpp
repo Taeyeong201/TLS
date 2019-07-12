@@ -29,9 +29,9 @@ void initTLS(ssl::context& context_) {
 		//| boost::asio::ssl::context::
 		| boost::asio::ssl::context::single_dh_use);
 
-	context_.use_certificate_chain_file("Root\\root.pem");
-	context_.use_private_key_file("Root\\root.key", boost::asio::ssl::context::pem);
-	context_.use_tmp_dh_file("Root\\dh2048.pem");
+	context_.use_certificate_chain_file("root.pem");
+	context_.use_private_key_file("root.key", boost::asio::ssl::context::pem);
+	context_.use_tmp_dh_file("dh2048.pem");
 }
 
 int main(int argc, char* argv[])

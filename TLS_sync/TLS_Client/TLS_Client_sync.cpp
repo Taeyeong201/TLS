@@ -20,7 +20,7 @@ public:
 		ctx(asio::ssl::context::tlsv13_client),
 		tls_stream(ioc, ctx)
 	{
-		ctx.load_verify_file("Rx\\user.pem");
+		ctx.load_verify_file("user.pem");
 		tls_stream.set_verify_mode(asio::ssl::verify_peer);
 		tls_stream.set_verify_callback(
 			boost::bind(&TLS_Stream::verify_certificate, this, _1, _2));
