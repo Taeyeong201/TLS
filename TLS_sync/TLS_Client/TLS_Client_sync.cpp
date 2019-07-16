@@ -47,7 +47,8 @@ public:
 		asio::write(tls_stream, asio::buffer(buf, size));
 	}
 	void read(char *buf, size_t size, boost::system::error_code& err) {
-		tls_stream.read_some(asio::buffer(buf, size), err);
+		//tls_stream.read_some(asio::buffer(buf, size), err);
+		asio::read(tls_stream, asio::buffer(buf, size), err);
 	}
 
 private:
@@ -99,14 +100,18 @@ int main(int argc, char* argv[])
 		TLS_Stream stream(argv[1], std::atoi(argv[2]));
 
 		stream.connect();
-
+		//stream.close();
 		std::cout << "메세지 입력 : ";
 		std::cin.getline(data_, max_length);
-		stream.write(data_, strlen(data_));
+		stream.write(data_, sizeof(data_));
 		
 		system::error_code err;
+		memset(data_, 0, sizeof(data_));
 
-		stream.read(data_, strlen(data_), err);
+		stream.read(data_, sizeof(data_), err);
+		if (err) {
+			std::cerr << "read err :" << err.message() << std::endl;
+		}
 		std::cout << "서버 : " << data_ << std::endl;
 
 	}

@@ -7,8 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-#include <WinSock2.h>
-#include <Windows.h>
+//#include <WinSock2.h>
+//#include <Windows.h>
 
 #include <cstdlib>
 #include <functional>
@@ -61,14 +61,19 @@ int main(int argc, char* argv[])
 			boost::asio::ssl::stream<tcp::socket> socket_(std::move(socket), tls_context);
 			socket_.handshake(boost::asio::ssl::stream_base::server);
 
-			socket_.read_some(buffer(data_), err);
+			socket_.read_some(buffer(data_, sizeof(data_)), err);
 			if (err) {
 				std::cout << "err : " << err.message() << std::endl;
 				break;
 			}
 			std::cout << "클라이언트 : " << data_ << std::endl;
 
-			socket_.write_some(buffer(data_, strlen(data_)), err);
+			//socket_.write_some(buffer(data_, strlen(data_)), err);
+			boost::asio::write(socket_, buffer(data_, strlen(data_)), err);
+			if (err) {
+				std::cout << "1err : " << err.message() << std::endl;
+				break;
+			}
 			std::cout << "보낸 메시지 : " << data_ << std::endl;
 		}
 		
