@@ -101,9 +101,9 @@ public:
 			| boost::asio::ssl::context::no_tlsv1_1
 			//| boost::asio::ssl::context::
 			| boost::asio::ssl::context::single_dh_use);
-		context_.set_password_callback(std::bind(&server::get_password, this));
-		context_.use_certificate_chain_file("root.pem");
-		context_.use_private_key_file("root.key", boost::asio::ssl::context::pem);
+		//context_.set_password_callback(std::bind(&server::get_password, this));
+		context_.use_certificate_chain_file("server.pem");
+		context_.use_private_key_file("server.key", boost::asio::ssl::context::pem);
 		context_.use_tmp_dh_file("dh2048.pem");
 
 		do_accept();
