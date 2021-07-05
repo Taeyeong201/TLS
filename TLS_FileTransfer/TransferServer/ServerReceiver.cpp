@@ -1,4 +1,4 @@
-#define BUF_SIZE 10240
+#define BUF_SIZE 4096
 
 
 #if 0
@@ -131,6 +131,8 @@ u64 GetMicroCounter()
 #include <iostream>
 #include <stdlib.h>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <chrono>
 typedef unsigned long long u64;
 u64 GetMicroCounter();
 
@@ -138,7 +140,40 @@ using namespace boost::asio::ip;
 
 int main(int argc, char **argv) {
 	boost::asio::io_context ioc;
+	boost::asio::ssl::context ctx_(boost::asio::ssl::context::tlsv13_server);
+
+	ctx_.set_options(
+		boost::asio::ssl::context::default_workarounds
+		| boost::asio::ssl::context::no_sslv2
+		| boost::asio::ssl::context::no_sslv3
+		| boost::asio::ssl::context::no_tlsv1_1
+		| boost::asio::ssl::context::single_dh_use
+	);
+	boost::system::error_code ec;
+	ctx_.use_certificate_chain_file("server.pem", ec);
+	if (ec) {
+		std::cout << 
+			"Load certificat Failed (" << ec.message() << ")" << std::endl;
+		return false;
+	}
+	ctx_.use_private_key_file("server.key", boost::asio::ssl::context::pem, ec);
+	if (ec) {
+		std::cout << 
+			"Load private_key Failed(" << ec.message() << ")" << std::endl;
+		return false;
+	}
+	ctx_.use_tmp_dh_file("dh2048.pem", ec);
+	if (ec) {
+		std::cout <<
+			"Load tmp_dh Failed(" << ec.message() << ")" << std::endl;
+		return false;
+	}
+
 	u64 start, end;
+	u64 start1, end1;
+	u64 start2, end2;
+	u64 testset1 = 0;
+	u64 testset = 0;
 
 	if (argc != 3) {
 		printf("Command parameter does not right. \n<port> <filename>\n");
@@ -147,6 +182,7 @@ int main(int argc, char **argv) {
 
 	tcp::endpoint endpoint(tcp::v4(), atoi(argv[1]));
 	tcp::acceptor acceptor(ioc, endpoint);
+	
 	tcp::socket socket(ioc);
 
 	int totalBufferNum;
@@ -161,18 +197,30 @@ int main(int argc, char **argv) {
 	fp = fopen(argv[2], "wb");
 
 	acceptor.accept(socket);
+
+	socket.set_option(tcp::no_delay(true));
+
+	boost::asio::ssl::stream<tcp::socket> sslSocket(std::move(socket), ctx_);
+
+	sslSocket.handshake(boost::asio::ssl::stream_base::server, ec);
+
 	start = GetMicroCounter();
 	printf("Connection Request from Client\n");
 	
-	readBytes = boost::asio::read(socket, boost::asio::buffer(buf, BUF_SIZE));
+	readBytes = boost::asio::read(sslSocket, boost::asio::buffer(buf, BUF_SIZE));
 	file_size = atol(buf);
 	totalBufferNum = file_size / BUF_SIZE + 1;
 	BufferNum = 0;
 	totalReadBytes = 0;
 	boost::system::error_code err;
 	start = GetMicroCounter();
+	std::chrono::system_clock::time_point chronostart = std::chrono::system_clock::now();
+
 	while (BufferNum != totalBufferNum) {
-		readBytes = boost::asio::read(socket, boost::asio::buffer(buf, BUF_SIZE),err);
+		start1 = GetMicroCounter();
+		readBytes = boost::asio::read(sslSocket, boost::asio::buffer(buf, BUF_SIZE),err);
+		end1 = GetMicroCounter();
+		testset += end1 - start1;
 		//if (err) {
 		//	printf("File Receive Errpr \n");
 		//	std::cerr << "message : " << err.message() << std::endl;
@@ -181,12 +229,32 @@ int main(int argc, char **argv) {
 		BufferNum++;
 		totalReadBytes += readBytes;
 		//printf("In progress: %d/%dByte(s) [%d%%]\n", totalReadBytes, file_size, ((BufferNum * 100) / totalBufferNum));
+		start2 = GetMicroCounter();
 		fwrite(buf, sizeof(char), readBytes, fp);
+		end2 = GetMicroCounter();
+		testset1 += end2 - start2;
 	}
-	
-	end = GetMicroCounter();
-	//printf("time: %f second(s)", (end - start)/10000);
-	std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
+
+	std::chrono::system_clock::time_point chronoend = std::chrono::system_clock::now();
+
+	std::chrono::milliseconds mill
+		= std::chrono::duration_cast<std::chrono::milliseconds>(chronoend - chronostart);
+	std::chrono::seconds sec
+		= std::chrono::duration_cast<std::chrono::seconds>(chronoend - chronostart);
+	std::chrono::minutes min
+		= std::chrono::duration_cast<std::chrono::minutes>(chronoend - chronostart);
+	std::cout << "time : " << mill.count() << " milliseconds" << std::endl;
+	std::cout << "time : " << sec.count() << " seconds" << std::endl;
+	std::cout << "time : " << min.count() << " minutes" << std::endl;
+
+	//end = GetMicroCounter();
+	////printf("time: %f second(s)", (end - start)/10000);
+	////std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
+	//printf("\nElapsed Time (micro seconds) : %lld", end - start);
+	//printf("\nElapsed Time (micro seconds) : %lld\n", testset);
+	//printf("\nElapsed Time (micro seconds) : %lld\n", testset1);
+
+	getchar();
 
 	socket.close();
 	return 0;

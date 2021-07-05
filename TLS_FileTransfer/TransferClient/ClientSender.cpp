@@ -105,15 +105,45 @@ u64 GetMicroCounter()
 #include <stdlib.h>
 #include <iostream>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/bind.hpp>
+#include <chrono>
 
 typedef unsigned long long u64;
 u64 GetMicroCounter();
 
 using namespace boost::asio::ip;
 
+bool callbackVerifyCertificate(
+	bool preverified, boost::asio::ssl::verify_context& contxet)
+{
+	char subject_name[256];
+	X509* cert = X509_STORE_CTX_get_current_cert(contxet.native_handle());
+	X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
+	std::cout << "Verifying " << subject_name << "\n";
+
+	return preverified;
+}
+
 int main(int argc, char **argv) {
 	u64 start, end;
+	u64 start1, end1;
+	u64 testset = 0;
 	boost::asio::io_context ioc;
+	boost::asio::ssl::context ctx_(boost::asio::ssl::context::tlsv13_client);
+
+	boost::system::error_code ec;
+	boost::asio::ssl::stream<boost::asio::ip::tcp::socket> tls_socket_(ioc, ctx_);
+
+	ctx_.load_verify_file("rootCA.pem", ec);
+	if (ec) {
+		std::cout << "load verify file failed(" << ec.message() << ")"
+			<<std::endl;
+		return false;
+	}
+	tls_socket_.set_verify_mode(boost::asio::ssl::verify_peer);
+	tls_socket_.set_verify_callback(
+		boost::bind(&callbackVerifyCertificate, _1, _2));
 
 	if (argc != 4) {
 		printf("Command parameter does not right. \n<server IP> <port> <filename>\n");
@@ -122,9 +152,19 @@ int main(int argc, char **argv) {
 
 	tcp::endpoint endpoint(address::from_string(argv[1]), atoi(argv[2]));
 
-	tcp::socket socket(ioc);
+	//tcp::socket socket(ioc);
 
-	socket.connect(endpoint);
+	tls_socket_.lowest_layer().connect(endpoint);
+	tls_socket_.lowest_layer().set_option(tcp::no_delay(true));
+
+	tls_socket_.handshake(boost::asio::ssl::stream_base::client, ec);
+	if (ec) {
+		std::cout
+			<< "Handshake Failed(" << ec.message() << ")"
+			<< std::endl;
+		return false;
+	}
+
 
 	printf("File Send Start\n");
 
@@ -150,19 +190,38 @@ int main(int argc, char **argv) {
 
 	_snprintf(buf, sizeof(buf), "%d", file_size);
 	//sendBytes = send(s, buf, sizeof(buf), 0);
-	sendBytes = socket.send(boost::asio::buffer(buf, BUF_SIZE));
+	sendBytes = boost::asio::write(tls_socket_,boost::asio::buffer(buf, BUF_SIZE));
+	std::chrono::system_clock::time_point chronostart = std::chrono::system_clock::now();
 
 	start = GetMicroCounter();
 	while ((sendBytes = fread(buf, sizeof(char), sizeof(buf), fp)) > 0) {
-		socket.send(boost::asio::buffer(buf, BUF_SIZE));
+		start1 = GetMicroCounter();
+		sendBytes = boost::asio::write(tls_socket_, boost::asio::buffer(buf, BUF_SIZE));
+		end1 = GetMicroCounter();
+		testset += end1 - start1;
 		BufferNum++;
 		totalSendBytes += sendBytes;
 		//printf("In progress: %d/%dByte(s) [%d%%]\n", totalSendBytes, 
 			//file_size, ((BufferNum * 100) / totalBufferNum));
 	}
-	end = GetMicroCounter();
-	//printf("time: %f second(s)", (end - start)/10000);
-	std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
+	std::chrono::system_clock::time_point chronoend = std::chrono::system_clock::now();
+
+	std::chrono::milliseconds mill
+		= std::chrono::duration_cast<std::chrono::milliseconds>(chronoend - chronostart);
+	std::chrono::seconds sec
+		= std::chrono::duration_cast<std::chrono::seconds>(chronoend - chronostart);
+	std::chrono::minutes min
+		= std::chrono::duration_cast<std::chrono::minutes>(chronoend - chronostart);
+	std::cout << "time : " << mill.count() << " milliseconds" << std::endl;
+	std::cout << "time : " << sec.count() << " seconds" << std::endl;
+	std::cout << "time : " << min.count() << " minutes" << std::endl;
+
+	//end = GetMicroCounter();
+	////printf("time: %f second(s)", (end - start)/10000);
+	////std::cout << "time : " << (end - start) / 1000 << "ms" << std::endl;
+	//printf("\nElapsed Time (micro seconds) : %lld\n", end - start);
+	//printf("Elapsed Time (micro seconds) : %lld\n", testset);
+	getchar();
 
 	return 0;
 }
