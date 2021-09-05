@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30517.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TLS_Server", "TLS_Server\TLS_Server.vcxproj", "{4C2FCB5B-BC63-4D26-BA1D-B661129B553B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TLS_Client", "TSL_Client\TSL_Client.vcxproj", "{F1FFA01C-6020-499F-9085-1074C5680001}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TLS_Client", "TLS_Client\TSL_Client.vcxproj", "{F1FFA01C-6020-499F-9085-1074C5680001}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
